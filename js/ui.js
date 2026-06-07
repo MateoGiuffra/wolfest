@@ -25,8 +25,11 @@ export const els = {
   toasts: $("toasts"),
   audio: $("audio"),
   playBtn: $("playBtn"),
+  prevBtn: $("prevBtn"),
+  nextBtn: $("nextBtn"),
   iconPlay: $("iconPlay"),
   iconPause: $("iconPause"),
+  trackTitle: $("trackTitle"),
   volume: $("volume"),
 };
 
