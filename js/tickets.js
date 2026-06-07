@@ -3,7 +3,7 @@
 // Transfer events that landed on the user, then confirm present ownership with
 // ownerOf before showing each card.
 
-import { CONTRACT_ADDRESS, ABI, EVENT_DATE } from "./config.js";
+import { CONTRACT_ADDRESS, ABI } from "./config.js";
 import { state } from "./state.js";
 import { els, escapeHtml, formatDate } from "./ui.js";
 
@@ -62,10 +62,21 @@ export async function loadMyTickets() {
         // Metadata unreadable — fall back to defaults below.
       }
 
+      // resalePrice > 0 means the ticket is currently listed in the marketplace.
+      let resaleWei = 0n;
+      try {
+        resaleWei = await state.readContract.resalePrice(tokenId);
+      } catch (_) {
+        // Treat as not listed.
+      }
+
       owned.push({
         tokenId,
         seatNumber: meta ? meta.seatNumber.toString() : "—",
         eventName: meta ? meta.eventName : "WolFest",
+        eventDate: meta ? meta.eventDate : null,
+        listed: resaleWei > 0n,
+        resaleEth: resaleWei > 0n ? ethers.formatEther(resaleWei) : null,
       });
     }
 
@@ -104,7 +115,7 @@ function renderTickets(tickets) {
       </div>
       <div class="p-5">
         <h3 class="font-display text-2xl tracking-wider text-bone uppercase leading-tight">${escapeHtml(t.eventName)}</h3>
-        <p class="text-bone/60 text-xs uppercase tracking-[0.2em] mt-2">${escapeHtml(formatDate(EVENT_DATE))}</p>
+        <p class="text-bone/60 text-xs uppercase tracking-[0.2em] mt-2">${escapeHtml(formatDate(t.eventDate))}</p>
 
         <div class="mt-5 flex items-end justify-between border-t border-dashed border-bone/20 pt-4">
           <div>
@@ -117,8 +128,10 @@ function renderTickets(tickets) {
           </div>
         </div>
 
+        <!-- Option 1: direct transfer — free, no royalty -->
         <div class="mt-5 border-t border-dashed border-bone/20 pt-4">
-          <label class="block text-[10px] uppercase tracking-[0.2em] text-bone/40 mb-2">Transferir a</label>
+          <label class="block text-[10px] uppercase tracking-[0.2em] text-bone/40 mb-1">Transferir directo</label>
+          <p class="text-[10px] text-bone/40 normal-case tracking-normal mb-2">Gratis, sin comisión ni royalty al organizador.</p>
           <div class="flex gap-2">
             <input
               data-token-input="${escapeHtml(t.tokenId)}"
@@ -128,13 +141,50 @@ function renderTickets(tickets) {
               class="flex-1 min-w-0 bg-black/60 border border-bone/20 focus:border-blood outline-none text-bone text-xs px-3 py-2 font-mono" />
             <button
               data-transfer="${escapeHtml(t.tokenId)}"
-              class="font-display tracking-widest uppercase text-xs bg-transparent border border-blood text-blood hover:bg-blood hover:text-bone transition-colors px-3 py-2 whitespace-nowrap">
+              class="font-display tracking-widest uppercase text-xs bg-transparent border border-bone/40 text-bone/80 hover:border-blood hover:text-blood transition-colors px-3 py-2 whitespace-nowrap">
               Transferir
             </button>
           </div>
+        </div>
+
+        <!-- Option 2: resale marketplace — 10% royalty to organizer -->
+        <div class="mt-4 border-t border-dashed border-bone/20 pt-4">
+          <label class="block text-[10px] uppercase tracking-[0.2em] text-bone/40 mb-1">Vender en marketplace</label>
+          <p class="text-[10px] text-bone/40 normal-case tracking-normal mb-2">Cobra on-chain: 10% al organizador, 90% para vos.</p>
+          ${t.listed ? listedControls(t) : unlistedControls(t)}
         </div>
       </div>
     `;
     els.ticketsGrid.appendChild(card);
   }
+}
+
+function unlistedControls(t) {
+  return `
+    <div class="flex gap-2">
+      <input
+        data-price-input="${escapeHtml(t.tokenId)}"
+        type="number"
+        min="0"
+        step="0.001"
+        placeholder="Precio en ETH"
+        class="flex-1 min-w-0 bg-black/60 border border-bone/20 focus:border-blood outline-none text-bone text-xs px-3 py-2" />
+      <button
+        data-list="${escapeHtml(t.tokenId)}"
+        class="font-display tracking-widest uppercase text-xs bg-blood hover:bg-bloodlight transition-colors px-3 py-2 border border-blood text-bone whitespace-nowrap">
+        Listar
+      </button>
+    </div>`;
+}
+
+function listedControls(t) {
+  return `
+    <div class="flex items-center justify-between gap-2">
+      <span class="text-xs uppercase tracking-wider text-bloodlight font-display">A la venta · ${escapeHtml(t.resaleEth)} ETH</span>
+      <button
+        data-delist="${escapeHtml(t.tokenId)}"
+        class="font-display tracking-widest uppercase text-xs bg-transparent border border-blood text-blood hover:bg-blood hover:text-bone transition-colors px-3 py-2 whitespace-nowrap">
+        Cancelar venta
+      </button>
+    </div>`;
 }

@@ -9,6 +9,8 @@ import { buyTicket } from "./buy.js";
 import { transferTicket } from "./transfer.js";
 import { loadEventState } from "./event-state.js";
 import { loadMyTickets } from "./tickets.js";
+import { listTicket, delistTicket, buyResaleTicket, loadMarketplace } from "./marketplace.js";
+import { initPlayer } from "./player.js";
 
 const { ethers } = window;
 
@@ -25,18 +27,42 @@ els.refreshTickets.addEventListener("click", async () => {
   await loadMyTickets();
 });
 
+els.refreshMarket.addEventListener("click", () => loadMarketplace());
+
 // Delegated handler: one listener on the grid serves every ticket card, so it
-// keeps working after the cards re-render.
+// keeps working after the cards re-render. Covers transfer, list and delist.
 els.ticketsGrid.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-transfer]");
-  if (!btn) return;
-  const tokenId = btn.getAttribute("data-transfer");
-  const input = els.ticketsGrid.querySelector(`[data-token-input="${tokenId}"]`);
-  const toAddress = input ? input.value.trim() : "";
-  transferTicket(tokenId, toAddress, btn);
+  const transferBtn = e.target.closest("[data-transfer]");
+  if (transferBtn) {
+    const tokenId = transferBtn.getAttribute("data-transfer");
+    const input = els.ticketsGrid.querySelector(`[data-token-input="${tokenId}"]`);
+    transferTicket(tokenId, input ? input.value.trim() : "", transferBtn);
+    return;
+  }
+
+  const listBtn = e.target.closest("[data-list]");
+  if (listBtn) {
+    const tokenId = listBtn.getAttribute("data-list");
+    const input = els.ticketsGrid.querySelector(`[data-price-input="${tokenId}"]`);
+    listTicket(tokenId, input ? input.value.trim() : "", listBtn);
+    return;
+  }
+
+  const delistBtn = e.target.closest("[data-delist]");
+  if (delistBtn) {
+    delistTicket(delistBtn.getAttribute("data-delist"), delistBtn);
+  }
+});
+
+// Marketplace cards: a single delegated handler for the Buy buttons.
+els.marketGrid.addEventListener("click", (e) => {
+  const buyBtn = e.target.closest("[data-buy-resale]");
+  if (!buyBtn) return;
+  buyResaleTicket(buyBtn.getAttribute("data-buy-resale"), buyBtn);
 });
 
 initWalletListeners();
+initPlayer();
 
 // Show the event state even before connecting, using MetaMask's provider if it
 // is already on Sepolia. Otherwise the panel stays in "—" until the user connects.
@@ -49,6 +75,7 @@ initWalletListeners();
       state.provider = tmp;
       state.readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, state.provider);
       await loadEventState();
+      await loadMarketplace();
     }
   } catch (_) {
     // Silent — user can still connect manually.

@@ -6,6 +6,7 @@ import { state } from "./state.js";
 import { els, toast, shorten } from "./ui.js";
 import { loadEventState, updateBuyState } from "./event-state.js";
 import { loadMyTickets, renderNoTickets } from "./tickets.js";
+import { loadMarketplace } from "./marketplace.js";
 
 const { ethers } = window;
 
@@ -59,6 +60,7 @@ export async function connectWallet() {
 
     await loadEventState();
     await loadMyTickets();
+    await loadMarketplace();
   } catch (err) {
     console.error(err);
     if (err && (err.code === 4001 || err.code === "ACTION_REJECTED")) {

@@ -42,6 +42,44 @@
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
     }
 
+    /* Fixed full-page stage background: photo at the bottom, fading up into red.
+       Uses a fixed pseudo-element instead of background-attachment: fixed
+       (the latter is buggy on iOS Safari). */
+    .bg-stage::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to top,
+          rgba(10, 10, 10, 0.55) 0%,
+          rgba(10, 10, 10, 0.35) 35%,
+          rgba(193, 18, 31, 0.45) 80%,
+          rgba(193, 18, 31, 0.85) 100%),
+        url("assets/imgs/indio-solari-muerte-saltograndeextra.png");
+      background-size: cover, cover;
+      background-position: center center, center 30%;
+      background-repeat: no-repeat, no-repeat;
+    }
+
+    @media (max-width: 640px) {
+      .bg-stage::after {
+        /* Landscape photo on a portrait screen: keep the subject (the Indio,
+           center-right) in frame and lean a bit more on the dark overlay. */
+        background-position: center center, 70% top;
+        background-image:
+          linear-gradient(to top,
+            rgba(10, 10, 10, 0.7) 0%,
+            rgba(10, 10, 10, 0.45) 35%,
+            rgba(193, 18, 31, 0.45) 80%,
+            rgba(193, 18, 31, 0.85) 100%),
+          url("assets/imgs/indio-solari-muerte-saltograndeextra.png");
+        background-size: cover, cover;
+        background-repeat: no-repeat, no-repeat;
+      }
+    }
+
     .grain::before {
       content: "";
       position: fixed;
@@ -148,13 +186,14 @@
   </style>
 </head>
 
-<body class="grain font-body text-bone min-h-screen antialiased selection:bg-blood selection:text-bone">
+<body class="grain bg-stage font-body text-bone min-h-screen antialiased selection:bg-blood selection:text-bone">
 
   <!-- ===== HEADER ===== -->
   <header class="relative z-10 border-b-2 border-blood/60">
     <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <span class="font-display text-3xl md:text-4xl tracking-wider text-bone">WOL<span
+        <span
+          class="font-display text-3xl md:text-4xl tracking-wider text-bone [-webkit-text-stroke:1.5px_#000] [paint-order:stroke]">WOL<span
             class="text-blood">FEST</span></span>
         <span
           class="hidden sm:inline-block text-[10px] uppercase tracking-[0.3em] text-bone/50 border border-bone/20 px-2 py-1">Sepolia
@@ -173,9 +212,9 @@
     <p class="font-body uppercase tracking-[0.4em] text-blood text-xs md:text-sm mb-3 flicker">Tributo al Indio · Ritual
       eléctrico</p>
     <h1 class="font-display text-6xl sm:text-7xl md:text-8xl leading-[0.85] tracking-wide">
-      <span class="block stroke-title">EL FESTIVAL</span>
-      <span class="block text-bone">DE LOS</span>
-      <span class="block text-blood">REDONDOS</span>
+      <span class="block stroke-title">WOLFEST</span>
+      <span class="block text-bone">UN TRIBUTO</span>
+      <span class="block text-blood">REDONDO</span>
     </h1>
     <p class="mt-6 max-w-xl mx-auto text-bone/70 uppercase tracking-widest text-sm">
       Una entrada. Una butaca. Un NFT que nadie te saca.<br class="hidden sm:block" />
@@ -237,7 +276,7 @@
           class="mt-6 w-full font-display tracking-widest uppercase text-lg bg-blood hover:bg-bloodlight transition-colors py-4 border border-blood text-bone disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
           Comprar entrada
         </button>
-        <p id="buyHint" class="text-center text-[11px] uppercase tracking-[0.2em] text-bone/40 mt-3">Conectá tu wallet
+        <p id="buyHint" class="text-center text-[11px] uppercase tracking-[0.2em] text-bone/90 mt-3">Conectá tu wallet
           primero</p>
       </div>
     </section>
@@ -254,8 +293,29 @@
       </div>
       <div id="ticketsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
         <p id="ticketsEmpty"
-          class="text-bone/40 uppercase tracking-widest text-sm col-span-full py-10 text-center border border-dashed border-bone/15">
+          class="text-bone/90 uppercase tracking-widest text-sm col-span-full py-10 text-center border border-dashed border-bone/15">
           Todavía no tenés entradas. O todavía no conectaste.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== RESALE MARKETPLACE ===== -->
+    <section>
+      <div class="flex items-center gap-4 mb-5">
+        <h2 class="font-display text-3xl tracking-wider text-bone uppercase">Reventa</h2>
+        <div class="flex-1 h-px bg-blood/40"></div>
+        <button id="refreshMarket"
+          class="text-[11px] uppercase tracking-[0.2em] text-bone/50 hover:text-blood transition-colors border border-bone/20 px-3 py-1">
+          Refrescar
+        </button>
+      </div>
+      <p class="text-bone/80 text-xs uppercase tracking-[0.2em] mb-5 -mt-2">
+        Entradas que otros pusieron a la venta. El contrato cobra 10% al organizador y paga 90% al vendedor.
+      </p>
+      <div id="marketGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <p id="marketEmpty"
+          class="text-bone/90 uppercase tracking-widest text-sm col-span-full py-10 text-center border border-dashed border-bone/15">
+          No hay entradas en reventa por ahora.
         </p>
       </div>
     </section>
@@ -265,15 +325,43 @@
   <!-- ===== FOOTER ===== -->
   <footer class="relative z-10 border-t-2 border-blood/60 mt-10">
     <div
-      class="max-w-6xl mx-auto px-5 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] uppercase tracking-[0.2em] text-bone/40">
+      class="max-w-6xl mx-auto px-5 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] uppercase tracking-[0.2em] text-bone/90">
       <span>WolFest · Contrato en Sepolia</span>
-      <a id="contractLink" href="#" target="_blank" rel="noopener"
-        class="hover:text-blood transition-colors break-all">Ver contrato en Etherscan</a>
+      <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-5">
+        <a href="https://github.com/MateoGiuffra/wolfest" target="_blank" rel="noopener"
+          class="hover:text-blood transition-colors">Código en GitHub</a>
+        <a id="contractLink" href="#" target="_blank" rel="noopener"
+          class="hover:text-blood transition-colors break-all">Ver contrato en Etherscan</a>
+      </div>
     </div>
   </footer>
 
   <!-- ===== TOAST CONTAINER ===== -->
   <div id="toasts" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 w-[min(92vw,360px)]"></div>
+
+  <!-- ===== AUDIO PLAYER ===== -->
+  <audio id="audio" src="assets/sounds/tarea-fina.mp3" preload="metadata" loop></audio>
+  <div
+    class="fixed bottom-5 left-5 z-50 flex items-center gap-3 bg-black/90 border-l-4 border-blood px-4 py-3 w-[min(90vw,320px)]">
+    <button id="playBtn" aria-label="Reproducir"
+      class="shrink-0 w-10 h-10 flex items-center justify-center border border-blood text-blood hover:bg-blood hover:text-bone transition-colors">
+      <svg id="iconPlay" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M6 4l14 8-14 8z" />
+      </svg>
+      <svg id="iconPause" class="w-4 h-4 hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <rect x="5" y="4" width="5" height="16" />
+        <rect x="14" y="4" width="5" height="16" />
+      </svg>
+    </button>
+    <div class="flex-1 min-w-0">
+      <p class="font-display tracking-widest uppercase text-xs text-bone leading-none truncate">Tarea Fina · WolFest</p>
+      <div class="flex items-center gap-2 mt-2">
+        <span class="text-[9px] uppercase tracking-[0.2em] text-bone/90">Vol</span>
+        <input id="volume" type="range" min="0" max="1" step="0.01" value="0.2"
+          class="flex-1 h-1 accent-blood cursor-pointer" aria-label="Volumen" />
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="js/main.js"></script>
 </body>

@@ -29,6 +29,14 @@ export async function transferTicket(tokenId, toAddress, btn) {
     return;
   }
 
+  // Direct transfer is irreversible and gives the ticket away for free — confirm.
+  const ok = window.confirm(
+    `Vas a transferir la entrada #${tokenId} a:\n${toAddress}\n\n` +
+    `Es una transferencia DIRECTA: gratis, sin comisión ni royalty al organizador, ` +
+    `y no se puede deshacer. ¿Confirmás?`
+  );
+  if (!ok) return;
+
   const originalLabel = btn ? btn.textContent : null;
   if (btn) {
     btn.disabled = true;
@@ -38,7 +46,9 @@ export async function transferTicket(tokenId, toAddress, btn) {
   try {
     const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, state.signer);
 
-    const tx = await contract.safeTransferFrom(state.account, toAddress, tokenId);
+    // Explicit signature: stays unambiguous even if the 4-arg overload is ever
+    // added to the ABI (ERC-721 defines safeTransferFrom with and without data).
+    const tx = await contract["safeTransferFrom(address,address,uint256)"](state.account, toAddress, tokenId);
     toast("Transferencia enviada. Esperando confirmación...", "info");
 
     await tx.wait();
