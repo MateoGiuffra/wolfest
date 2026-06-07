@@ -6,6 +6,7 @@ import { state } from "./state.js";
 import { els, toast } from "./ui.js";
 import { connectWallet, hasMetaMask, initWalletListeners } from "./wallet.js";
 import { buyTicket } from "./buy.js";
+import { transferTicket } from "./transfer.js";
 import { loadEventState } from "./event-state.js";
 import { loadMyTickets } from "./tickets.js";
 
@@ -22,6 +23,17 @@ els.refreshTickets.addEventListener("click", async () => {
   }
   await loadEventState();
   await loadMyTickets();
+});
+
+// Delegated handler: one listener on the grid serves every ticket card, so it
+// keeps working after the cards re-render.
+els.ticketsGrid.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-transfer]");
+  if (!btn) return;
+  const tokenId = btn.getAttribute("data-transfer");
+  const input = els.ticketsGrid.querySelector(`[data-token-input="${tokenId}"]`);
+  const toAddress = input ? input.value.trim() : "";
+  transferTicket(tokenId, toAddress, btn);
 });
 
 initWalletListeners();

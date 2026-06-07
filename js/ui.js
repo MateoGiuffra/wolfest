@@ -63,11 +63,16 @@ export function setBuyLoading(loading, label) {
   }
 }
 
-export function formatDate(unixSeconds) {
-  if (unixSeconds === null || unixSeconds === undefined) return "Fecha por confirmar";
-  const n = Number(unixSeconds);
-  if (!n) return "Fecha por confirmar";
-  const d = new Date(n * 1000);
+export function formatDate(value) {
+  let d;
+  if (value instanceof Date) {
+    d = value;
+  } else {
+    if (value === null || value === undefined) return "Fecha por confirmar";
+    const n = Number(value);
+    if (!n) return "Fecha por confirmar";
+    d = new Date(n * 1000);
+  }
   return d.toLocaleDateString("es-AR", {
     weekday: "long",
     day: "numeric",
