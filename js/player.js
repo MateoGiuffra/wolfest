@@ -10,9 +10,9 @@ import { els, toast } from "./ui.js";
 const SOUNDS_DIR = "assets/sounds";
 
 const TRACK_FILES = [
-  "Patricio Rey y sus Redonditos de Ricota - Jijiji (Audio Oficial).mp3",
-  "Patricio Rey y sus Redonditos de Ricota - Nuestro Amo Juega al Esclavo (Audio Oficial).mp3",
   "Patricio Rey y sus Redonditos de Ricota - Tarea Fina (Audio Oficial).mp3",
+  "Patricio Rey y sus Redonditos de Ricota - Nuestro Amo Juega al Esclavo (Audio Oficial).mp3",
+  "Patricio Rey y sus Redonditos de Ricota - Jijiji (Audio Oficial).mp3",
 ];
 
 const playlist = TRACK_FILES.map((file) => ({
