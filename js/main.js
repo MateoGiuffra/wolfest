@@ -64,19 +64,27 @@ els.marketGrid.addEventListener("click", (e) => {
 initWalletListeners();
 initPlayer();
 
-// Show the event state even before connecting, using MetaMask's provider if it
-// is already on Sepolia. Otherwise the panel stays in "—" until the user connects.
+// Show the event state even before connecting. Tries MetaMask first (if already
+// on Sepolia); falls back to a public RPC so price/availability are always visible.
 (async function initPublicRead() {
-  if (!hasMetaMask()) return;
   try {
-    const tmp = new ethers.BrowserProvider(window.ethereum);
-    const net = await tmp.getNetwork();
-    if (net.chainId === SEPOLIA_CHAIN_ID) {
-      state.provider = tmp;
-      state.readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, state.provider);
-      await loadEventState();
-      await loadMarketplace();
+    // Intentar con MetaMask primero (si está en Sepolia)
+    if (hasMetaMask()) {
+      const tmp = new ethers.BrowserProvider(window.ethereum);
+      const net = await tmp.getNetwork();
+      if (net.chainId === SEPOLIA_CHAIN_ID) {
+        state.provider = tmp;
+        state.readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, state.provider);
+        await loadEventState();
+        await loadMarketplace();
+        return;
+      }
     }
+    // Fallback: RPC público de Sepolia — no requiere MetaMask ni red específica
+    const fallbackProvider = new ethers.JsonRpcProvider("https://rpc.sepolia.org");
+    state.readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, fallbackProvider);
+    await loadEventState();
+    await loadMarketplace();
   } catch (_) {
     // Silent — user can still connect manually.
   }
