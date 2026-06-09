@@ -44,10 +44,16 @@
 
     /* Fixed full-page stage background. Using a real <div> instead of ::after
        because position:fixed on pseudo-elements is unreliable on iOS Safari
-       (image can scroll with the page instead of staying pinned). */
+       (image can scroll with the page instead of staying pinned).
+       height uses 100lvh (large viewport) instead of bottom:0 so the size
+       stays stable when the mobile browser chrome hides on scroll. */
     #bgStage {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100vh;
+      height: 100lvh;
       z-index: 0;
       pointer-events: none;
       background-image:

@@ -1,6 +1,6 @@
 # WolFest — Entradas NFT
 
-dApp para comprar, ver y transferir entradas NFT de **WolFest**, un recital tributo al Indio Solari. Corre en la testnet **Sepolia** de Ethereum: las entradas son tokens ERC-721 que viven en un smart contract, no en una base de datos.
+dApp para comprar, ver, transferir y revender entradas NFT de **WolFest**, un recital tributo al Indio Solari. Corre en la testnet **Sepolia** de Ethereum: las entradas son tokens ERC-721 que viven en un smart contract, no en una base de datos.
 
 > Estética de flyer de recital, no de fintech. Negro, rojo, tipografía cruda.
 
@@ -12,7 +12,7 @@ La app necesita **MetaMask** y la red **Sepolia** (el ETH es de testnet, no plat
 
 1. Entrá a la app (o levantala local, ver abajo).
 2. Tocá **Conectar MetaMask** — si estás en otra red, te ofrece pasar a Sepolia.
-3. Mirá el precio y la disponibilidad, comprá una entrada, y vela aparecer en **Mis entradas**.
+3. Mirá el precio y la disponibilidad (visible sin wallet, leído de RPCs públicos), comprá una entrada, y vela aparecer en **Mis entradas**.
 
 ¿No tenés ETH de Sepolia? Pedí en un faucet (por ejemplo [sepoliafaucet.com](https://sepoliafaucet.com)).
 
@@ -24,10 +24,12 @@ La app necesita **MetaMask** y la red **Sepolia** (el ETH es de testnet, no plat
 |---------|---------|
 | Conexión de wallet | Detecta MetaMask, fuerza la red Sepolia, muestra la address truncada |
 | Estado del evento | Precio, vendidas, disponibles y barra de aforo, leídos del contrato |
+| Lectura sin wallet | El estado del evento y el marketplace cargan antes de conectar MetaMask (3 RPCs públicos en carrera) |
 | Comprar entrada | Llama `buyTicket()` con el precio exacto y espera la confirmación |
 | Mis entradas | Reconstruye lo que **poseés hoy** desde los eventos `Transfer` + `ownerOf` |
-| Transferir entrada | Envía un ticket a otra address con `safeTransferFrom` (ERC-721) |
-| Música | Reproductor del tema del recital con play/pausa y volumen |
+| Transferir entrada | Envía un ticket a otra address con `safeTransferFrom` (sin cobro, sin royalty) |
+| Marketplace de reventa | Listá tu entrada con precio, cancelá la venta, o comprá la entrada de otro — el contrato cobra 10% al organizador y paga 90% al vendedor, de forma atómica on-chain |
+| Música | Reproductor con playlist de 3 temas de Redondos: play/pausa, anterior, siguiente y volumen |
 
 ---
 
@@ -46,9 +48,11 @@ Sin build step, sin npm. Todo por CDN.
 | Dato | Valor |
 |------|-------|
 | Red | Sepolia Testnet (`chainId` 11155111) |
-| Address | `0xDe9a284E5b7609970773d899b061ae963109C079` |
-| Estándar | ERC-721 |
-| Explorador | [Etherscan](https://sepolia.etherscan.io/address/0xDe9a284E5b7609970773d899b061ae963109C079) |
+| Address | `0xc5F938749d025c63eCB08D8Be119055fB677cB88` |
+| Estándar | ERC-721 + EIP-2981 (royalties) + Ownable |
+| Supply máximo | 1.000 entradas |
+| Royalty de reventa | 10% al organizador, 90% al vendedor |
+| Explorador | [Etherscan](https://sepolia.etherscan.io/address/0xc5F938749d025c63eCB08D8Be119055fB677cB88) |
 
 ---
 
@@ -58,20 +62,28 @@ Cada módulo de `js/` tiene **una sola responsabilidad** — una razón para cam
 
 ```
 wolfest/
-├── index.html        HTML + estilos + carga del módulo de entrada
-├── vercel.json       Rewrite para servir como sitio estático
-├── tarea-fina.mp3    Tema del recital
+├── index.html           HTML + estilos + carga del módulo de entrada
+├── smart-contract.sol   Fuente del contrato desplegado
+├── vercel.json          Rewrite para servir como sitio estático
+├── assets/
+│   ├── imgs/
+│   │   └── indio-solari-muerte-saltograndeextra.png
+│   └── sounds/
+│       ├── Patricio Rey y sus Redonditos de Ricota - Tarea Fina (Audio Oficial).mp3
+│       ├── Patricio Rey y sus Redonditos de Ricota - Nuestro Amo Juega al Esclavo (Audio Oficial).mp3
+│       └── Patricio Rey y sus Redonditos de Ricota - Jijiji (Audio Oficial).mp3
 └── js/
-    ├── config.js       Address, red y ABI del contrato
-    ├── state.js        Estado compartido de la conexión (provider, signer, account)
-    ├── ui.js           DOM, toasts y formateo — todo lo que toca pantalla
-    ├── wallet.js       Conexión a MetaMask y manejo de red
-    ├── event-state.js  Lectura del estado del evento
-    ├── buy.js          Flujo de compra
-    ├── tickets.js      Reconstrucción y render de "Mis entradas"
-    ├── transfer.js     Transferencia de entradas a otra address
-    ├── player.js       Reproductor de música
-    └── main.js         Orquesta y cablea los eventos
+    ├── config.js        Address, red y ABI del contrato
+    ├── state.js         Estado compartido de la conexión (provider, signer, account)
+    ├── ui.js            DOM, toasts y formateo — todo lo que toca pantalla
+    ├── wallet.js        Conexión a MetaMask y manejo de red
+    ├── event-state.js   Lectura del estado del evento
+    ├── buy.js           Flujo de compra
+    ├── tickets.js       Reconstrucción y render de "Mis entradas"
+    ├── transfer.js      Transferencia directa a otra address
+    ├── marketplace.js   Reventa: listar, cancelar, comprar con royalty on-chain
+    ├── player.js        Reproductor de música con playlist
+    └── main.js          Orquesta y cablea los eventos
 ```
 
 ---
@@ -98,5 +110,6 @@ Es un sitio estático. Vercel lo detecta solo desde el repo de GitHub: no hace f
 ## Notas
 
 - **Es testnet.** Todo se paga con ETH de Sepolia. No hay plata real en juego.
-- **Reventa con pago:** la transferencia mueve el NFT pero **no cobra** — no es una venta atómica. Una reventa con pago garantizado requiere lógica nueva en el contrato (Solidity), no se resuelve desde el front.
-- **Autoplay:** la música arranca solo cuando tocás play; los navegadores bloquean el audio automático.
+- **Dos modos de transferencia:** la transferencia directa mueve el NFT sin cobrar nada; la reventa por marketplace es atómica — el contrato distribuye el pago y transfiere el NFT en la misma transacción.
+- **Autoplay:** la música intenta arrancar al cargar; si el navegador lo bloquea, arranca con la primera interacción del usuario.
+- **Fuente de la dirección pública en `config.js`:** ese es el único archivo a tocar si el contrato se redespliega.
