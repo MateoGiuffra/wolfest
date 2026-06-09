@@ -64,11 +64,26 @@ els.marketGrid.addEventListener("click", (e) => {
 initWalletListeners();
 initPlayer();
 
+// Race multiple public Sepolia RPCs; first to respond wins (avoids a single slow RPC
+// leaving the page stuck on dashes for users without MetaMask).
+async function makePublicContract() {
+  const RPCS = [
+    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://sepolia.drpc.org",
+    "https://rpc.sepolia.org",
+  ];
+  return Promise.any(RPCS.map(async (url) => {
+    const provider = new ethers.JsonRpcProvider(url);
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+    await contract.ticketPrice(); // probe — throws if the RPC is dead
+    return contract;
+  }));
+}
+
 // Show the event state even before connecting. Tries MetaMask first (if already
-// on Sepolia); falls back to a public RPC so price/availability are always visible.
+// on Sepolia); falls back to public RPCs so price/availability are always visible.
 (async function initPublicRead() {
   try {
-    // Intentar con MetaMask primero (si está en Sepolia)
     if (hasMetaMask()) {
       const tmp = new ethers.BrowserProvider(window.ethereum);
       const net = await tmp.getNetwork();
@@ -80,9 +95,7 @@ initPlayer();
         return;
       }
     }
-    // Fallback: RPC público de Sepolia — no requiere MetaMask ni red específica
-    const fallbackProvider = new ethers.JsonRpcProvider("https://rpc.sepolia.org");
-    state.readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, fallbackProvider);
+    state.readContract = await makePublicContract();
     await loadEventState();
     await loadMarketplace();
   } catch (_) {

@@ -42,11 +42,10 @@
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
     }
 
-    /* Fixed full-page stage background: photo at the bottom, fading up into red.
-       Uses a fixed pseudo-element instead of background-attachment: fixed
-       (the latter is buggy on iOS Safari). */
-    .bg-stage::after {
-      content: "";
+    /* Fixed full-page stage background. Using a real <div> instead of ::after
+       because position:fixed on pseudo-elements is unreliable on iOS Safari
+       (image can scroll with the page instead of staying pinned). */
+    #bgStage {
       position: fixed;
       inset: 0;
       z-index: 0;
@@ -64,9 +63,7 @@
     }
 
     @media (max-width: 640px) {
-      .bg-stage::after {
-        /* Landscape photo on a portrait screen: keep the subject (the Indio,
-           center-right) in frame and lean a bit more on the dark overlay. */
+      #bgStage {
         background-position: center center, 70% top;
         background-image:
           linear-gradient(to top,
@@ -186,7 +183,9 @@
   </style>
 </head>
 
-<body class="grain bg-stage font-body text-bone min-h-screen antialiased selection:bg-blood selection:text-bone">
+<body class="grain font-body text-bone min-h-screen antialiased selection:bg-blood selection:text-bone">
+
+  <div id="bgStage" aria-hidden="true"></div>
 
   <!-- ===== HEADER ===== -->
   <header class="relative z-10 border-b-2 border-blood/60">
